@@ -1,0 +1,13 @@
+{
+  "version": "2.0",
+  "accounts": [
+    {
+      "username": "email@address.com",
+      "password": "MyPassword",
+      "local_path": "/data",
+      "folders": [],
+      "server": "imap.server.com"
+    }
+  ],
+  "debug": false
+}

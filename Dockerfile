@@ -1,21 +1,35 @@
-FROM ruby:2.3-alpine
+FROM ruby:alpine
 
-# install gem
-RUN gem install 'imap-backup'
+# install dependencies
+RUN gem install 'imap-backup' && apk add -U --no-cache su-exec
 
 # add cron log
 RUN touch /var/log/cron.log
 
 # add entrypoint script
-ADD entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod a+x /usr/local/bin/entrypoint.sh
+ADD entrypoint.sh /entrypoint.sh
+RUN chmod a+x /entrypoint.sh
 
 # add imap backup script
-ADD imap-backup.sh /usr/local/bin/imap-backup.sh
-RUN chmod a+x /usr/local/bin/imap-backup.sh
+ADD imap-backup.sh /imap-backup.sh
+RUN chmod a+x /imap-backup.sh
+
+# setup user and group names and ids
+ENV USER imapbackup
+ENV UID 17958
+ENV GROUP imapbackup
+ENV GID 17958
+
+# create user and group
+RUN addgroup -S ${GROUP} -g ${GID} && adduser -D -S -u ${UID} ${USER} && adduser ${USER} ${GROUP}
+
+# create /data directory, copy config, set owner
+RUN mkdir -m770 /data
+ADD sample_config.json /data/config.json
+RUN chown ${USER}:${GROUP} /data -R
 
 # mount this, if you want to store the config in a volume
-VOLUME /root/.imap-backup
+VOLUME /data
 
-ENTRYPOINT ["entrypoint.sh"]
+ENTRYPOINT ["/bin/sh", "/entrypoint.sh"]
 CMD ["crond","-f", "-L", "/dev/stdout"]

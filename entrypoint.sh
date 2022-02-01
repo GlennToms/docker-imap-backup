@@ -1,24 +1,17 @@
 #!/bin/sh
-set -e
 
-CONFIG_FILE=/root/.imap-backup/config.json
-BACKUP_SCRIPT=/usr/local/bin/imap-backup.sh
+# take ownership of data directories and files
+chown -R $UID:$GID /data
+chmod -R 770 /data
 
-CONFIG=${CONFIG:-'{"accounts":[]}'}
-SCHEDULE=${SCHEDULE:-"0 * * * *"}
-
-# create config file if it doesn't exist
-if [ ! -f $CONFIG_FILE ]; then
-    echo "[$(date)] Creating config file…"
-
-    echo $CONFIG >> $CONFIG_FILE
-    chmod 0600 $CONFIG_FILE
-fi
+# imap-backup need config in users home folder
+mkdir -p /home/${USER}/.imap-backup
+cp /data/config.json /home/${USER}/.imap-backup/config.json
+chown -R $UID:$GID /home/${USER}/.imap-backup
+chmod -R 600 /home/${USER}/.imap-backup/config.json
 
 # add backup script to crontab
-echo "$SCHEDULE $BACKUP_SCRIPT" | crontab -
+echo "0 * * * * exec su-exec $UID:$GID /imap-backup.sh" | crontab -
 
 # run backup script once at startup
-.$BACKUP_SCRIPT
-
-exec "$@"
+exec su-exec $UID:$GID /imap-backup.sh
